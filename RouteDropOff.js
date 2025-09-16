@@ -56,8 +56,14 @@ function routeRowSafe_(row) {
     // Also check legacy logging system for backward compatibility
     if (rowWasLogged_(row)) return;
 
-    // Resolve destination from CONFIG
-    const dest = lookupDestination_(custm); // {name, isDefault}
+    // Check if description contains "[i]" for invoicing
+    let dest;
+    if (descr && String(descr).toUpperCase().includes('[I]')) {
+      dest = { name: 'INVOICES', isDefault: false };
+    } else {
+      // Resolve destination from CONFIG
+      dest = lookupDestination_(custm); // {name, isDefault}
+    }
     if (!dest || !dest.name) return;
 
     const target = getOrCreateSheet_(dest.name);
