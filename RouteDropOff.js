@@ -1,7 +1,7 @@
 /*
-    This script is used to route the DROP_OFF sheet to the appropriate destination.
+    This script routes the DROP_OFF sheet to the appropriate destination.
     It is installed as an on-edit handler and handles multi-row pastes.
-    It writes 6 columns (A-F) to every destination and shows the routing destination in column G.
+    It writes 6 columns (A–F) to every destination and shows the routing destination in column G.
 */
 
 /***** ROUTING that writes 6 columns to every destination and shows routing destination in column G *****/
@@ -49,14 +49,12 @@ function routeRowSafe_(row) {
     // Require ALL A–F present before routing (supports manual entry)
     if (![part, loc, custm, price, date, descr].every(v => v !== '' && v !== null)) return;
 
-    // Check if this row was already routed (column G has destination)
+    // Skip if already routed (column G has destination) or legacy LOG shows row handled
     const routedTo = drop.getRange(row, 7, 1, 1).getValue(); // Column G
-    if (routedTo && routedTo !== '') return; // Skip if already routed
-
-    // Also check legacy logging system for backward compatibility
+    if (routedTo && routedTo !== '') return;
     if (rowWasLogged_(row)) return;
 
-    // Check if description contains "[i]" for invoicing
+    // Manual override: if DESCR contains “[I]”, route to INVOICES
     let dest;
     if (descr && String(descr).toUpperCase().includes('[I]')) {
       dest = { name: 'INVOICES', isDefault: false };
@@ -68,12 +66,13 @@ function routeRowSafe_(row) {
 
     const target = getOrCreateSheet_(dest.name);
 
-    // Headers: ORDERS gets full A–F; all other tabs only enforce A–D (but we still write A–F)
-    const isOrders = String(dest.name).trim().toUpperCase() === 'ORDERS' || dest.isDefault === true;
-    if (isOrders) {
-      ensureHeaders_(target, ORDERS_HEADER);
+    // Headers: ORDERS and INVOICES (and default target) enforce A–F; account tabs enforce A–D (but we still write A–F)
+    const dn = String(dest.name).trim().toUpperCase();
+    const isOrdersOrInvoices = dn === 'ORDERS' || dn === 'INVOICES' || dest.isDefault === true;
+    if (isOrdersOrInvoices) {
+      ensureHeaders_(target, ORDERS_HEADER);   // A–F
     } else {
-      ensureHeaders_(target, ACCOUNT_HEADER);
+      ensureHeaders_(target, ACCOUNT_HEADER);  // A–D
     }
 
     // Find next empty row considering 6 columns and write A–F to every destination
@@ -180,6 +179,15 @@ function appendLog_(key, destName, row) {
 /** Prevent concurrent double-appends when multiple users paste at once */
 function withLock_(fn) {
   const lock = LockService.getDocumentLock();
-  lock.tryLock(5000);
-  try { fn(); } finally { lock.releaseLock(); }
+  const got = lock.tryLock(5000); // returns boolean
+  if (!got) {
+    // Optional: brief operator hint; ignore if toast fails outside Sheets UI
+    try { SpreadsheetApp.getActive().toast('System busy—try again in a moment', 'Drop-off', 3); } catch (_) {}
+    return;
+  }
+  try {
+    fn();
+  } finally {
+    lock.releaseLock();
+  }
 }
