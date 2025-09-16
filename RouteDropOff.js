@@ -1,10 +1,10 @@
 /*
     This script is used to route the DROP_OFF sheet to the appropriate destination.
     It is installed as an on-edit handler and handles multi-row pastes.
-    It ignores column G (ROUTED_AT) and writes 6 columns to every destination.
+    It writes 6 columns (A-F) to every destination and shows the routing destination in column G.
 */
 
-/***** ROUTING that ignores column G (ROUTED_AT) and writes 6 columns to every destination *****/
+/***** ROUTING that writes 6 columns to every destination and shows routing destination in column G *****/
 const DROP_OFF_SHEET = 'DROP_OFF';
 const CONFIG_SHEET   = 'CONFIG';
 const LOG_SHEET      = 'LOG';
@@ -49,7 +49,11 @@ function routeRowSafe_(row) {
     // Require ALL A–F present before routing (supports manual entry)
     if (![part, loc, custm, price, date, descr].every(v => v !== '' && v !== null)) return;
 
-    // Only skip if THIS ROW was already routed
+    // Check if this row was already routed (column G has destination)
+    const routedTo = drop.getRange(row, 7, 1, 1).getValue(); // Column G
+    if (routedTo && routedTo !== '') return; // Skip if already routed
+
+    // Also check legacy logging system for backward compatibility
     if (rowWasLogged_(row)) return;
 
     // Resolve destination from CONFIG
@@ -69,6 +73,9 @@ function routeRowSafe_(row) {
     // Find next empty row considering 6 columns and write A–F to every destination
     const next = nextRowByFirstNCols_(target, 6);
     target.getRange(next, 1, 1, 6).setValues([[part, loc, custm, price, date, descr]]);
+
+    // Write destination to column G to show where this row was routed
+    drop.getRange(row, 7, 1, 1).setValue(dest.name);
 
     // LOG every routing event (duplicates allowed across rows)
     appendLog_(buildKey_(vals), dest.name, row);
