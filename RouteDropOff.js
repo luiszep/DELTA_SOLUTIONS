@@ -1,3 +1,9 @@
+/*
+    This script is used to route the DROP_OFF sheet to the appropriate destination.
+    It is installed as an on-edit handler and handles multi-row pastes.
+    It ignores column G (ROUTED_AT) and writes 6 columns to every destination.
+*/
+
 /***** ROUTING that ignores column G (ROUTED_AT) and writes 6 columns to every destination *****/
 const DROP_OFF_SHEET = 'DROP_OFF';
 const CONFIG_SHEET   = 'CONFIG';
