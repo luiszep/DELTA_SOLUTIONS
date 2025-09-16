@@ -1,0 +1,6 @@
+Based on input from usage of version 1.1:
+    1. Add "[i]" to indicate to be directed to invoicing.
+    2. Add a notification showing that a row has been deleted to brind awareness 
+       to the row and maybe mark it as a dead row if possible with the words "DEAD". 
+    3. Incorporate a way to automatically clean up both files every day and save them 
+       to a daily sales file (could be separate from the one currently used.)
