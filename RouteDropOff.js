@@ -54,9 +54,9 @@ function routeRowSafe_(row) {
     if (routedTo && routedTo !== '') return;
     if (rowWasLogged_(row)) return;
 
-    // Manual override: if DESCR contains “[I]”, route to INVOICES
+    // Manual override: if DESCR contains "\" (backslash), route to INVOICES
     let dest;
-    if (descr && String(descr).toUpperCase().includes('[I]')) {
+    if (typeof descr === 'string' && descr.indexOf('\\') !== -1) {
       dest = { name: 'INVOICES', isDefault: false };
     } else {
       // Resolve destination from CONFIG
